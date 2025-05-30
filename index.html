@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>THE GREAT AUTO | คำนวณค่างวดรถยนต์</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: url('./TOON.jpg') no-repeat center center fixed;
+      background-size: cover;
+      cursor: url('https://cur.cursors-4u.net/animals/ani-2/ani190.cur'), auto;
+      color: gold;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 5vh auto;
+      padding: 30px;
+      background-color: rgba(0, 0, 0, 0.85);
+      border-radius: 15px;
+      box-shadow: 0 0 20px gold;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 28px;
+      color: #FFD700;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      text-align: center;
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: inline-block;
+      width: 120px;
+      vertical-align: middle;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    select,
+    input[type="number"] {
+      width: calc(100% - 20px);
+      padding: 8px;
+      border: 2px solid gold;
+      border-radius: 8px;
+      background-color: #222;
+      color: gold;
+      font-size: 14px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      background-color: gold;
+      color: black;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    #result {
+      margin-top: 20px;
+      background-color: rgba(255, 215, 0, 0.1);
+      padding: 15px;
+      border: 1px solid gold;
+      border-radius: 8px;
+      word-break: break-word;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>THE GREAT AUTO</h1>
+    <h2>คำนวณค่างวดรถยนต์ By.jackky</h2>
+    <img src="By.Jackky.png" alt="โลโก้ผู้พัฒนา" style="display:block; margin:10px auto; width:120px;" />
+
+    <div class="form-group">
+      <label for="carType">ประเภทรถ:</label>
+      <select id="carType"></select>
+    </div>
+
+    <div class="form-group">
+      <label for="carYear">ปีรถ:</label>
+      <select id="carYear"></select>
+    </div>
+
+    <div class="form-group">
+      <label for="price">ราคาขาย (บาท):</label>
+      <input type="number" id="price" placeholder="กรอกราคาขาย"/>
+    </div>
+
+    <button onclick="calculate()">คำนวณ</button>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const sheetURL = "https://script.google.com/macros/s/AKfycbweMHduf0U8-sGI7ebeshCBESMhQFnV8nfdQmTia8eFAmBObuAvKHSZt7ZcI8MVCAk/exec";
+    let interestData = [];
+
+    fetch(sheetURL)
+      .then(res => res.json())
+      .then(data => {
+        interestData = data;
+        const carTypes = [...new Set(data.map(d => d['ประเภทรถ']))];
+        const carYears = [...new Set(data.map(d => d['ปีรถ']))].sort((a, b) => b - a);
+
+        const carTypeSelect = document.getElementById('carType');
+        const carYearSelect = document.getElementById('carYear');
+
+        carTypes.forEach(type => {
+          carTypeSelect.innerHTML += `<option value="${type}">${type}</option>`;
+        });
+
+        carYears.forEach(year => {
+          carYearSelect.innerHTML += `<option value="${year}">${year}</option>`;
+        });
+      });
+
+    function calculate() {
+      const carType = document.getElementById("carType").value;
+      const carYear = document.getElementById("carYear").value;
+      const price = parseFloat(document.getElementById("price").value);
+      const resultDiv = document.getElementById("result");
+      resultDiv.innerHTML = "";
+
+      if (!carType || !carYear || !price) {
+        resultDiv.innerHTML = "กรุณากรอกข้อมูลให้ครบถ้วน";
+        return;
+      }
+
+      const matches = interestData.filter(d => d['ประเภทรถ'] === carType && d['ปีรถ'].toString() === carYear.toString());
+
+      if (matches.length === 0) {
+        resultDiv.innerHTML = "ไม่พบข้อมูลดอกเบี้ยสำหรับเงื่อนไขนี้";
+        return;
+      }
+
+      matches.forEach(item => {
+        const rate = parseFloat(item['ดอกเบี้ย (%)']);
+        const term = parseInt(item['จำนวนงวดผ่อน']);
+        const vat = price * 0.07;
+        const priceWithVat = price + vat;
+        const interestPerYear = priceWithVat * (rate / 100);
+        const totalInterest = interestPerYear * (term / 12);
+        const totalPay = priceWithVat + totalInterest;
+        const installment = totalPay / term;
+
+        resultDiv.innerHTML += `
+          <p>
+            ดอกเบี้ย: ${rate.toFixed(2)}%<br>
+            จำนวนงวดผ่อน: ${term} เดือน<br>
+            ยอดผ่อนต่อเดือน: ${installment.toLocaleString(undefined, {maximumFractionDigits: 2})} บาท
+          </p>
+        `;
+      });
+    }
+  </script>
+</body>
+</html>
